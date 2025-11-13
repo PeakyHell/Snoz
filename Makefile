@@ -21,6 +21,15 @@ compile:
 	$(OZC) -c AgentBlank.oz -o "compiled/AgentBlank.ozf"
 	$(OZC) -c Graphics.oz -o "compiled/Graphics.ozf"
 	$(OZC) -c Main.oz -o "compiled/Main.ozf"
+
 run:
 	$(OZC) -c Input.oz -o "compiled/Input.ozf"
 	$(OZENGINE) compiled/Main.ozf
+
+.PHONY: clean
+clean:
+	@rm -f "compiled/Input.ozf"
+	@rm -f "compiled/AgentManager.ozf"
+	@rm -f "compiled/AgentBlank.ozf"
+	@rm -f "compiled/Graphics.ozf"
+	@rm -f "compiled/Main.ozf"
