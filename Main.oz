@@ -58,12 +58,23 @@ in
         % Output: Updated game controller instance
         % Validates movement, updates graphics, broadcasts position to all bots
         fun {MoveTo moveTo(Id Dir)}
-            Pos NewTracker NewBot NewPos         
+            Pos NewTracker NewBot NewPos Current Occ      
         in
             if State.tracker.Id.alive == true then
    
                 Pos = pos('x':State.tracker.Id.x  'y':State.tracker.Id.y)
-              
+                Current = State.tracker.Id.x#State.tracker.Id.y
+                Occ = {List.flatten {Record.toList State.occupiedTiles}} %%%% pas fini / append here heads for other snakes
+                if {State.gui getGameObjectCount($)} == 1 then
+                    {State.gui updateMessageBox(ID_to_COLOR.Id # ' wins the game!')}
+                    {State.gui dispawnBot(Id)}
+                end
+                for P in Occ do
+                    if P == Current then
+                        {State.gui dispawnBot(Id)}
+                    {State.gui updateMessageBox(ID_to_COLOR.Id # ' died')}
+                    end
+                end
                 if {IsWall Pos Dir State} == false then
                   
                     {State.gui moveBot(Id Dir)}
@@ -173,7 +184,11 @@ in
 
             {GameController NewState}
         end
-
+        fun {OccupiedTiles occupiedTiles(Id Tiles)}
+            NewOccupied = {AdjoinAt State.occupiedTiles Id Tiles}
+        in
+            {GameController {AdjoinAt State 'occupiedTiles' NewOccupied}}
+        end
         % TellTeam: Handles team communication between bots of the same type.
         % Input: tellTeam(Id Msg) message
         %   - Id: Bot sending the message
@@ -203,6 +218,7 @@ in
                 'fruitSpawned':FruitSpawned
                 'fruitDispawned':FruitDispawned
                 'tellTeam':TellTeam
+                'occupiedTiles':OccupiedTiles
             )
         in
             if {HasFeature Interface Dispatch} then
@@ -330,6 +346,7 @@ in
                 'gcPort':Port
                 'tracker':BotTracker
                 'active':0
+                'occupiedTiles': occupiedTiles()
             )}
         in
 

@@ -9,6 +9,7 @@ import
     Application
     QTk at 'x-oz://system/wp/QTk.ozf'
     Input
+    Browser
 export
     'spawn': SpawnGraphics
 define
@@ -52,6 +53,8 @@ define
         % render: Draws this object on the given buffer.
         % Input: Buffer (QTk image buffer)
         meth render(Buffer)
+            for body_part(x:X y:Y) in @tail do
+                {Buffer copy(@sprite 'to': o(X Y))} end
             {Buffer copy(@sprite 'to': o(@x @y))}
         end
 
@@ -76,7 +79,7 @@ define
     %   - grow(Size): Increases snake length (currently unimplemented)
     class Snake from GameObject
         attr 'isMoving' 'moveDir' 'targetX' 'targetY'
-        'tail' 'length'
+        'tail' 'length' 'framesMoved' 'growPending' 'pending'
 
         % init: Initializes a snake.
         % Inputs: Id (unique identifier), X (pixel x-coord), Y (pixel y-coord)
@@ -85,8 +88,11 @@ define
             'isMoving' := false
             'targetX' := X
             'targetY' := Y
-            'tail' := body_part(x:X y:Y)|nil
-            'length' := 1
+            'tail' := nil
+            'length' := 0
+            'framesMoved' := 0
+            'growPending' := 0
+            'pending' := nil
         end
 
         % setTarget: Sets the movement direction and calculates target coordinates.
@@ -110,24 +116,43 @@ define
         % Input: GCPort (Game Controller port)
         % Sends movedTo message when target is reached
         meth move(GCPort)
-            if @moveDir == 'north' then
-                'y' := @y - 4
-            elseif @moveDir == 'south' then
-                'y' := @y + 4
-            elseif @moveDir == 'east' then
-                'x' := @x + 4
-            elseif @moveDir == 'west' then
-                'x' := @x - 4
+            PrevX PrevY NewTail Occ in
+        PrevX = @x PrevY = @y
+
+        if @moveDir == 'north' then 'y' := @y - 4
+        elseif @moveDir == 'south' then 'y' := @y + 4
+        elseif @moveDir == 'east'  then 'x' := @x + 4
+        elseif @moveDir == 'west'  then 'x' := @x - 4
+        end
+
+        'framesMoved' := @framesMoved + 1
+        Occ =  {Map @tail fun {$ body_part(x:Xi y:Yi)} Xi div 32 # Yi div 32 end}
+        if @framesMoved mod 8 == 0 then
+            if @growPending > 0 then
+            'pending' := body_part(x:PrevX y:PrevY) | @pending
+            'growPending' := @growPending - 1
+        else
+            if @pending \= nil then
+                'tail' := {Record.toList @pending} | @tail
+                'tail' := {List.flatten @tail}
+                'pending' := nil
             end
 
-            if @x == @targetX andthen @y == @targetY then
-                NewX = @x div 32
-                NewY = @y div 32
-            in
-                'isMoving' := false
-                {Send GCPort movedTo(@id @type NewX NewY)}
-            end
-        end
+            NewTail = body_part(x:@x y:@y) | @tail
+            if {Length NewTail} > @length then
+                'tail' := {List.take NewTail @length}
+            else
+                'tail' := NewTail
+            end end end
+
+        if @x == @targetX andthen @y == @targetY then
+            'isMoving' := false
+            NewX = @x div 32
+            NewY = @y div 32
+        in
+            {Send GCPort occupiedTiles(@id Occ)}
+            {Send GCPort movedTo(@id @type NewX NewY)}
+        end end
 
         % update: Called each frame to update snake state.
         % Input: GCPort (Game Controller port)
@@ -144,7 +169,8 @@ define
             % Increase the length of the snake
             % Modify the tail attribute
             % Render the tail (Not in this method)
-            skip
+            'growPending' := @growPending + Size
+            'length' := @length + Size
         end
     end
 
@@ -206,6 +232,9 @@ define
             'ids' := 0
         end
 
+         meth getGameObjectCount($)
+            {Length {Dictionary.keys @gameObjects}}
+        end
         % isRunning: Returns whether the graphics system is running.
         % Output: Boolean
         meth isRunning($) @running end
@@ -238,11 +267,12 @@ define
             {Send @gcPort fruitDispawned(X Y)}
         end
 
-        % ateFruit: Handles a snake eating a fruit.
-        % Inputs: X (grid x), Y (grid y), Id (bot identifier)
-        % Makes the snake grow by 1 segment
         meth ateFruit(X Y Id)
-            skip
+            Bot = {Dictionary.condGet @gameObjects Id 'null'}
+        in
+            if Bot \= 'null' then
+                {Bot grow(1)}
+            end
         end
 
         % buildMap: Constructs the static background from the map.
