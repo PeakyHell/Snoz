@@ -54,8 +54,9 @@ define
         % Input: Buffer (QTk image buffer)
         meth render(Buffer)
             for body_part(x:X y:Y) in @tail do
-                {Buffer copy(@sprite 'to': o(X Y))} end
-            {Buffer copy(@sprite 'to': o(@x @y))}
+                {Buffer copy(@sprite.body 'to': o(X Y))} end
+            {Buffer copy(@sprite.head 'to': o(@x @y))}
+            
         end
 
         % update: Updates object state each frame (default: no-op).
@@ -79,12 +80,16 @@ define
     %   - grow(Size): Increases snake length (currently unimplemented)
     class Snake from GameObject
         attr 'isMoving' 'moveDir' 'targetX' 'targetY'
-        'tail' 'length' 'framesMoved' 'growPending' 'pending'
+        'tail' 'length' 'framesMoved' 'growPending' 'pending' 'head'
 
         % init: Initializes a snake.
         % Inputs: Id (unique identifier), X (pixel x-coord), Y (pixel y-coord)
         meth init(Id X Y)
-            GameObject, init(Id 'snake' {QTk.newImage photo(file: CD # '/assets/SNAKE_' # Id # '/body.png')} X Y)
+            Images Head Body in
+               Body = {QTk.newImage photo(file: CD # '/assets/SNAKE_' # Id # '/body.png')}
+               Head = {QTk.newImage photo(file: CD # '/assets/SNAKE_' # Id # '/head_north.png')}
+            Images = images(head: Head body: Body)
+           GameObject, init(Id 'snake'  Images X Y)
             'isMoving' := false
             'targetX' := X
             'targetY' := Y
@@ -99,8 +104,16 @@ define
         % Input: Dir (direction atom: 'north', 'south', 'east', 'west')
         % Sets target 32 pixels away in the specified direction
         meth setTarget(Dir)
+            local HeadFile in
             'isMoving' := true
             'moveDir' := Dir
+             HeadFile = case Dir
+               of 'north' then CD # '/assets/SNAKE_' # @id # '/head_north.png'
+               [] 'south' then CD # '/assets/SNAKE_' # @id # '/head_south.png' 
+               [] 'east' then CD # '/assets/SNAKE_' # @id # '/head_east.png'
+               [] 'west' then CD # '/assets/SNAKE_' # @id # '/head_west.png'
+               end
+    'sprite' := images(head: {QTk.newImage photo(file: HeadFile)} body: @sprite.body) end
             if Dir == 'north' then
                 'targetY' := @y - 32
             elseif Dir == 'south' then
