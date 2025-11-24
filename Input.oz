@@ -2,6 +2,8 @@
 %%% Defines the game configuration including grid dimensions, bot spawning locations, and map generation.
 
 functor
+import
+    OS
 export
     'genMap': MapGenerator
     'bots': Bots
@@ -9,6 +11,8 @@ export
 define
     % Grid dimension (Dim x Dim grid)
     Dim = 30
+    % Percentage of randomly placed inside walls
+    InsideWalls = 5
 
     % List of bots to spawn in the game.
     % Each bot is defined as: bot(Type TemplateAgent X Y)
@@ -39,7 +43,11 @@ define
                 elseif Acc mod Dim == Dim-1 then  % Last column
                     Next = 1
                 else
-                    Next = 0
+                    if ({OS.rand} mod 100) < InsideWalls then
+                        Next = 1
+                    else
+                        Next = 0
+                    end
                 end
                 Next | {GridStructure Acc+1}
             else
