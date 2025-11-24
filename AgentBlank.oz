@@ -62,7 +62,8 @@ define
                     TempState = {Adjoin State state('x':X 'y':Y)}
 
                     % Pick a random direction
-                    NewDir = Directions.({OS.rand} mod 4 + 1)
+                    % NewDir = Directions.({OS.rand} mod 4 + 1)
+                    NewDir = {ChooseDirection TempState}
 
                     Next = {NextMove TempState NewDir}
                     {Send State.gcport moveTo(State.id NewDir)}
@@ -122,5 +123,23 @@ define
     in
         thread {Handler Stream Instance} end
         Port
+    end
+
+    % Inputs
+    %   - State: The current state of the snake
+    fun {ChooseDirection State}
+        if State.x == 0 then
+            Directions.(3) % Left wall
+        elseif State.x == Input.dim then
+            Directions.(4) % Right wall
+            
+        elseif State.y == 0 then
+            Directions.(2) % Top wall
+        elseif State.y == Input.dim then
+            Directions.(1) % Bottom wall
+
+        else
+            Directions.({OS.rand} mod 4 + 1)
+        end
     end
 end
