@@ -128,14 +128,14 @@ define
     % Inputs
     %   - State: The current state of the snake
     fun {ChooseDirection State}
-        if State.x == 0 then
+        if State.x == 1 then
             Directions.(3) % Left wall
-        elseif State.x == Input.dim then
+        elseif State.x == Input.dim-2 then
             Directions.(4) % Right wall
             
-        elseif State.y == 0 then
+        elseif State.y == 1 then
             Directions.(2) % Top wall
-        elseif State.y == Input.dim then
+        elseif State.y == Input.dim-2 then
             Directions.(1) % Bottom wall
 
         else
