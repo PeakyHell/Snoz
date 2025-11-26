@@ -10,6 +10,7 @@ import
     AgentManager
     Application
     System
+    Browser
 define
 
     StartGame
@@ -58,16 +59,23 @@ in
         % Output: Updated game controller instance
         % Validates movement, updates graphics, broadcasts position to all bots
         fun {MoveTo moveTo(Id Dir)}
-            Pos NewTracker NewBot NewPos Current Occ      
+            Pos NewTracker NewBot NewPos Current Occ Xyesos Lox Xyi Rem
         in
             if State.tracker.Id.alive == true then
    
                 Pos = pos('x':State.tracker.Id.x  'y':State.tracker.Id.y)
                 Current = State.tracker.Id.x#State.tracker.Id.y
+                %{Browser.browse State.scores}
+                %Xyesos = {Record.toDictionary State.scores}
+                Lox = {Dictionary.entries State.scores}
+                Xyi = {List.sort Lox fun {$ A B} A.2 > B.2 end}
+                %{Browser.browse Xyi}
+                {State.gui updateSchet(Xyi)}
                 Occ = {List.flatten {Record.toList State.occupiedTiles}} %%%% pas fini / append here heads for other snakes
                 if {State.gui getGameObjectCount($)} == 1 then
                     {State.gui updateMessageBox(ID_to_COLOR.Id # ' wins the game!')}
                     {State.gui dispawnBot(Id)}
+                    
                 end
                 for P in Occ do
                     if P == Current then
@@ -94,7 +102,7 @@ in
             
             {GameController {AdjoinAt State 'tracker' NewTracker}}
         end
-
+        
         % FruitSpawned: Handles fruit spawning events.
         % Input: fruitSpawned(X Y) message
         %   - X, Y: Grid coordinates of new fruit
@@ -149,7 +157,6 @@ in
                 if Type == 'snake' then
                     if {HasFeature State.items I} andthen {And State.items.I.alive State.tracker.Id.alive} then
                         if {Label State.items.I} == 'fruit' then
-
                             % update score and message box
                             {State.gui updateScore(State.score + 1)}
                             {State.gui updateMessageBox(ID_to_COLOR.Id # ' ate a fruit')}
@@ -189,6 +196,14 @@ in
         in
             {GameController {AdjoinAt State 'occupiedTiles' NewOccupied}}
         end
+
+        fun {SnakeScores snakeScores(Dico)}
+            %Color = ID_to_COLOR.Id
+            %NewScores = {Dictionary.clone State.scores}
+        %in
+        %{Dictionary.put NewScores Id Score}
+        {GameController {AdjoinAt State 'scores' Dico}}
+        end
         % TellTeam: Handles team communication between bots of the same type.
         % Input: tellTeam(Id Msg) message
         %   - Id: Bot sending the message
@@ -219,6 +234,7 @@ in
                 'fruitDispawned':FruitDispawned
                 'tellTeam':TellTeam
                 'occupiedTiles':OccupiedTiles
+                'snakeScores': SnakeScores
             )
         in
             if {HasFeature Interface Dispatch} then
@@ -343,6 +359,7 @@ in
                 'gui': GUI
                 'map': Map
                 'score': 0
+                'scores' : {Dictionary.new}
                 'gcPort':Port
                 'tracker':BotTracker
                 'active':0

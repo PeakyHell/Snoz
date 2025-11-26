@@ -21,7 +21,7 @@ define
 
     FRUIT_SPRITE = {QTk.newImage photo(file: CD # '/assets/fruit.png')}
     ROTTEN_FRUIT_SPRITE = {QTk.newImage photo(file: CD # '/assets/rotten_fruit.png')}
-    
+    Dico = {Dictionary.new}
     % GameObject: Base class for all game entities.
     % Attributes:
     %   - id: Unique identifier for the object
@@ -34,7 +34,7 @@ define
     %   - render(Buffer): Renders the sprite onto the given buffer
     %   - update(GCPort): Updates the object state (overridden in subclasses)
     class GameObject
-        attr 'id' 'type' 'sprite' 'x' 'y'
+        attr 'id' 'type' 'sprite' 'x' 'y' 'snakescore'
 
         % init: Initializes a game object.
         % Inputs: Id (integer), Type (atom), Sprite (QTk image), X (pixels), Y (pixels)
@@ -44,6 +44,7 @@ define
             'sprite' := Sprite
             'x' := X
             'y' := Y
+            'snakescore' := 0
         end
 
         % getType: Returns the type of this game object.
@@ -165,6 +166,8 @@ define
         in
             {Send GCPort occupiedTiles(@id Occ)}
             {Send GCPort movedTo(@id @type NewX NewY)}
+            {Dictionary.put Dico @id @snakescore}
+            {Send GCPort snakeScores(Dico)}
         end end
 
         % update: Called each frame to update snake state.
@@ -184,6 +187,7 @@ define
             % Render the tail (Not in this method)
             'growPending' := @growPending + Size
             'length' := @length + Size
+            'snakescore' := @snakescore +1
         end
     end
 
@@ -198,7 +202,7 @@ define
             'gcPort'
             'lastMsg'
             'lastMsgHandle'
-            'grid_dim'
+            'grid_dim' 'schet' 'zalupka'
 
         % init: Initializes the graphics system and creates the game window.
         % Input: GCPort (Port to the Game Controller)
@@ -212,11 +216,10 @@ define
             'running' := true
             'gcPort' := GCPort
             'grid_dim' := Input.dim
-
             Height = @grid_dim*32
             GridWidth = @grid_dim*32
             Width = GridWidth + PanelWidth
-
+            'zalupka' := 0
             'buffer' := {QTk.newImage photo('width': GridWidth 'height': Height)}
             'buffered' := {QTk.newImage photo('width': GridWidth 'height': Height)}
 
@@ -238,9 +241,10 @@ define
             {@canvas create('image' GridWidth div 2 Height div 2 'image': @buffer)}
             {@canvas create('text' GridWidth+(PanelWidth div 2) 50 'text': 'score: 0' 'fill': 'white' 'font': FONT 'handle': @scoreHandle)}
             {@canvas create('text' GridWidth+(PanelWidth div 2) 100 'text': 'Message box: empty' 'fill': 'white' 'font': FONT 'handle': @lastMsgHandle)}
+            %{@canvas create('text' GridWidth+(PanelWidth div 2) 150 'text': 'Message box: empty' 'fill': 'white' 'font': FONT 'handle': @schet)}
             'background' := {QTk.newImage photo('width': GridWidth 'height': Height)}
             {@window 'show'}
-
+            %{@schet set('text': "score: " # 'axaaxaa')}
             'gameObjects' := {Dictionary.new}
             'ids' := 0
         end
@@ -333,6 +337,7 @@ define
         % dispawnBot: Removes a bot from the game.
         % Input: Id (bot identifier)
         meth dispawnBot(Id)
+            {Dictionary.remove Dico Id}
             {Dictionary.remove @gameObjects Id}
         end
 
@@ -352,6 +357,22 @@ define
             'score' := NewScore
             {@scoreHandle set('text': "score: " # @score)}
         end
+meth updateSchet(Xyi)
+    
+    {@canvas tk(delete scoreTag)}
+   proc {PrintScore Lis I}
+    Head in
+      case Lis of (Color#Schet)|T then 
+        Head = {QTk.newImage photo(file: CD # '/assets/SNAKE_' # Color # '/head_north.png')}
+        {@canvas create('image' (@grid_dim*32)+(200 div 2) I 'image': Head 'tags': scoreTag)}
+        {@canvas create('text' (@grid_dim*32)+(400 div 2) I 'text': Schet 'fill': 'white' 'font': FONT 'tags': scoreTag)} {PrintScore T I+50}
+      [] nil then skip end
+   end 
+in
+   {PrintScore (Xyi) 200}
+end 
+
+
 
         % updateMessageBox: Updates the message box display.
         % Input: Msg (string or atom to display)
