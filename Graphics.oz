@@ -9,6 +9,7 @@ import
     Application
     QTk at 'x-oz://system/wp/QTk.ozf'
     Input
+    Browser
 export
     'spawn': SpawnGraphics
 define
@@ -20,7 +21,7 @@ define
 
     FRUIT_SPRITE = {QTk.newImage photo(file: CD # '/assets/fruit.png')}
     ROTTEN_FRUIT_SPRITE = {QTk.newImage photo(file: CD # '/assets/rotten_fruit.png')}
-    
+    Dico = {Dictionary.new}
     % GameObject: Base class for all game entities.
     % Attributes:
     %   - id: Unique identifier for the object
@@ -33,7 +34,7 @@ define
     %   - render(Buffer): Renders the sprite onto the given buffer
     %   - update(GCPort): Updates the object state (overridden in subclasses)
     class GameObject
-        attr 'id' 'type' 'sprite' 'x' 'y'
+        attr 'id' 'type' 'sprite' 'x' 'y' 'snakescore'
 
         % init: Initializes a game object.
         % Inputs: Id (integer), Type (atom), Sprite (QTk image), X (pixels), Y (pixels)
@@ -43,6 +44,7 @@ define
             'sprite' := Sprite
             'x' := X
             'y' := Y
+            'snakescore' := 0
         end
 
         % getType: Returns the type of this game object.
@@ -52,9 +54,11 @@ define
         % render: Draws this object on the given buffer.
         % Input: Buffer (QTk image buffer)
         meth render(Buffer)
-            {Buffer copy(@sprite 'to': o(@x @y))}
+            for body_part(x:X y:Y) in @tail do
+                {Buffer copy(@sprite.body 'to': o(X Y))} end
+            {Buffer copy(@sprite.head 'to': o(@x @y))}
+        
         end
-
         % update: Updates object state each frame (default: no-op).
         % Input: GCPort (Game Controller port)
         meth update(GCPort) skip end
@@ -76,25 +80,40 @@ define
     %   - grow(Size): Increases snake length (currently unimplemented)
     class Snake from GameObject
         attr 'isMoving' 'moveDir' 'targetX' 'targetY'
-        'tail' 'length'
+        'tail' 'length' 'framesMoved' 'growPending' 'pending' 'head'
 
         % init: Initializes a snake.
         % Inputs: Id (unique identifier), X (pixel x-coord), Y (pixel y-coord)
         meth init(Id X Y)
-            GameObject, init(Id 'snake' {QTk.newImage photo(file: CD # '/assets/SNAKE_' # Id # '/body.png')} X Y)
+            Images Head Body in
+               Body = {QTk.newImage photo(file: CD # '/assets/SNAKE_' # Id # '/body.png')}
+               Head = {QTk.newImage photo(file: CD # '/assets/SNAKE_' # Id # '/head_north.png')}
+            Images = images(head: Head body: Body)
+           GameObject, init(Id 'snake'  Images X Y)
             'isMoving' := false
             'targetX' := X
             'targetY' := Y
-            'tail' := body_part(x:X y:Y)|nil
+            'tail' :=  body_part(x:X y:Y) | nil
             'length' := 1
+            'framesMoved' := 0
+            'growPending' := 0
+            'pending' := nil
         end
 
         % setTarget: Sets the movement direction and calculates target coordinates.
         % Input: Dir (direction atom: 'north', 'south', 'east', 'west')
         % Sets target 32 pixels away in the specified direction
         meth setTarget(Dir)
+            local HeadFile in
             'isMoving' := true
             'moveDir' := Dir
+             HeadFile = case Dir
+               of 'north' then CD # '/assets/SNAKE_' # @id # '/head_north.png'
+               [] 'south' then CD # '/assets/SNAKE_' # @id # '/head_south.png' 
+               [] 'east' then CD # '/assets/SNAKE_' # @id # '/head_east.png'
+               [] 'west' then CD # '/assets/SNAKE_' # @id # '/head_west.png'
+               end
+    'sprite' := images(head: {QTk.newImage photo(file: HeadFile)} body: @sprite.body) end
             if Dir == 'north' then
                 'targetY' := @y - 32
             elseif Dir == 'south' then
@@ -110,24 +129,45 @@ define
         % Input: GCPort (Game Controller port)
         % Sends movedTo message when target is reached
         meth move(GCPort)
-            if @moveDir == 'north' then
-                'y' := @y - 4
-            elseif @moveDir == 'south' then
-                'y' := @y + 4
-            elseif @moveDir == 'east' then
-                'x' := @x + 4
-            elseif @moveDir == 'west' then
-                'x' := @x - 4
+            PrevX PrevY NewTail Occ in
+        PrevX = @x PrevY = @y
+
+        if @moveDir == 'north' then 'y' := @y - 4
+        elseif @moveDir == 'south' then 'y' := @y + 4
+        elseif @moveDir == 'east'  then 'x' := @x + 4
+        elseif @moveDir == 'west'  then 'x' := @x - 4
+        end
+
+        'framesMoved' := @framesMoved + 1
+        Occ =  {Map @tail fun {$ body_part(x:Xi y:Yi)} Xi div 32 # Yi div 32 end}
+        if @framesMoved mod 8 == 0 then
+            if @growPending > 0 then
+            'pending' := body_part(x:PrevX y:PrevY) | @pending
+            'growPending' := @growPending - 1
+        else
+            if @pending \= nil then
+                'tail' := {Record.toList @pending} | @tail
+                'tail' := {List.flatten @tail}
+                'pending' := nil
             end
 
-            if @x == @targetX andthen @y == @targetY then
-                NewX = @x div 32
-                NewY = @y div 32
-            in
-                'isMoving' := false
-                {Send GCPort movedTo(@id @type NewX NewY)}
-            end
-        end
+            NewTail = body_part(x:@x y:@y) | @tail
+            if {Length NewTail} > @length then
+                'tail' := {List.take NewTail @length}
+            else
+                'tail' := NewTail
+            end end end
+
+        if @x == @targetX andthen @y == @targetY then
+            'isMoving' := false
+            NewX = @x div 32
+            NewY = @y div 32
+        in
+            {Send GCPort occupiedTiles(@id Occ)}
+            {Send GCPort movedTo(@id @type NewX NewY)}
+            {Dictionary.put Dico @id @snakescore}
+            {Send GCPort snakeScores(Dico)}
+        end end
 
         % update: Called each frame to update snake state.
         % Input: GCPort (Game Controller port)
@@ -144,7 +184,9 @@ define
             % Increase the length of the snake
             % Modify the tail attribute
             % Render the tail (Not in this method)
-            skip
+            'growPending' := @growPending + Size
+            'length' := @length + Size
+            'snakescore' := @snakescore +1
         end
     end
 
@@ -173,11 +215,9 @@ define
             'running' := true
             'gcPort' := GCPort
             'grid_dim' := Input.dim
-
             Height = @grid_dim*32
             GridWidth = @grid_dim*32
             Width = GridWidth + PanelWidth
-
             'buffer' := {QTk.newImage photo('width': GridWidth 'height': Height)}
             'buffered' := {QTk.newImage photo('width': GridWidth 'height': Height)}
 
@@ -201,11 +241,13 @@ define
             {@canvas create('text' GridWidth+(PanelWidth div 2) 100 'text': 'Message box: empty' 'fill': 'white' 'font': FONT 'handle': @lastMsgHandle)}
             'background' := {QTk.newImage photo('width': GridWidth 'height': Height)}
             {@window 'show'}
-
             'gameObjects' := {Dictionary.new}
             'ids' := 0
         end
 
+         meth getGameObjectCount($)
+            {Length {Dictionary.keys @gameObjects}}
+        end
         % isRunning: Returns whether the graphics system is running.
         % Output: Boolean
         meth isRunning($) @running end
@@ -238,11 +280,12 @@ define
             {Send @gcPort fruitDispawned(X Y)}
         end
 
-        % ateFruit: Handles a snake eating a fruit.
-        % Inputs: X (grid x), Y (grid y), Id (bot identifier)
-        % Makes the snake grow by 1 segment
         meth ateFruit(X Y Id)
-            skip
+            Bot = {Dictionary.condGet @gameObjects Id 'null'}
+        in
+            if Bot \= 'null' then
+                {Bot grow(1)}
+            end
         end
 
         % buildMap: Constructs the static background from the map.
@@ -290,6 +333,7 @@ define
         % dispawnBot: Removes a bot from the game.
         % Input: Id (bot identifier)
         meth dispawnBot(Id)
+            {Dictionary.remove Dico Id}
             {Dictionary.remove @gameObjects Id}
         end
 
@@ -309,6 +353,22 @@ define
             'score' := NewScore
             {@scoreHandle set('text': "score: " # @score)}
         end
+meth updateSchet(Xyi)
+    
+    {@canvas tk(delete scoreTag)}
+   proc {PrintScore Lis I}
+    Head in
+      case Lis of (Color#Schet)|T then 
+        Head = {QTk.newImage photo(file: CD # '/assets/SNAKE_' # Color # '/head_south.png')}
+        {@canvas create('image' (@grid_dim*32)+(200 div 2) I 'image': Head 'tags': scoreTag)}
+        {@canvas create('text' (@grid_dim*32)+(400 div 2) I 'text': Schet 'fill': 'white' 'font': FONT 'tags': scoreTag)} {PrintScore T I+50}
+      [] nil then skip end
+   end 
+in
+   {PrintScore (Xyi) 200}
+end 
+
+
 
         % updateMessageBox: Updates the message box display.
         % Input: Msg (string or atom to display)
