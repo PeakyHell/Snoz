@@ -57,9 +57,8 @@ define
             for body_part(x:X y:Y) in @tail do
                 {Buffer copy(@sprite.body 'to': o(X Y))} end
             {Buffer copy(@sprite.head 'to': o(@x @y))}
-            
+        
         end
-
         % update: Updates object state each frame (default: no-op).
         % Input: GCPort (Game Controller port)
         meth update(GCPort) skip end
@@ -94,8 +93,8 @@ define
             'isMoving' := false
             'targetX' := X
             'targetY' := Y
-            'tail' := nil
-            'length' := 0
+            'tail' :=  body_part(x:X y:Y) | nil
+            'length' := 1
             'framesMoved' := 0
             'growPending' := 0
             'pending' := nil
@@ -363,7 +362,7 @@ meth updateSchet(Xyi)
    proc {PrintScore Lis I}
     Head in
       case Lis of (Color#Schet)|T then 
-        Head = {QTk.newImage photo(file: CD # '/assets/SNAKE_' # Color # '/head_north.png')}
+        Head = {QTk.newImage photo(file: CD # '/assets/SNAKE_' # Color # '/head_south.png')}
         {@canvas create('image' (@grid_dim*32)+(200 div 2) I 'image': Head 'tags': scoreTag)}
         {@canvas create('text' (@grid_dim*32)+(400 div 2) I 'text': Schet 'fill': 'white' 'font': FONT 'tags': scoreTag)} {PrintScore T I+50}
       [] nil then skip end
