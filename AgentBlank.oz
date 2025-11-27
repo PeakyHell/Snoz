@@ -128,28 +128,41 @@ define
     % Inputs
     %   - State: The current state of the snake
     fun {ChooseDirection State}
-        X Y NorthCell SouthCell EastCell WestCell
+        X Y SafeDirections L0 L1 L2 L3 
+        fun {AddIfCond Dir Cond Acc}
+            if Cond then Dir|Acc else Acc end
+        end
     in
         X = State.x
         Y = State.y
 
-        NorthCell = {List.nth State.map ({GetIndex X Y-1} + 1)}
-        SouthCell = {List.nth State.map ({GetIndex X Y+1} + 1)}
-        EastCell = {List.nth State.map ({GetIndex X+1 Y} + 1)}
-        WestCell = {List.nth State.map ({GetIndex X-1 Y} + 1)}
+        % Find the safe surronding cells
+        L0 = nil
 
-        % Go to the opposite of the first found wall
-        if NorthCell == 1 then
-            Directions.(2)
-        elseif SouthCell == 1 then
-            Directions.(1)
-        elseif EastCell == 1 then
-            Directions.(4)
-        elseif WestCell == 1 then
-            Directions.(3)
+        L1 = {AddIfCond 'north'
+            ({List.nth State.map {GetIndex X (Y-1)}} == 0)
+            L0}
+
+        L2 = {AddIfCond 'south'
+            ({List.nth State.map {GetIndex X (Y+1)}} == 0)
+            L1}
+
+        L3 = {AddIfCond 'east'
+            ({List.nth State.map {GetIndex (X+1) Y}} == 0)
+            L2}
+
+        SafeDirections = {AddIfCond 'west'
+            ({List.nth State.map {GetIndex (X-1) Y}} == 0)
+            L3}
+
+
+        if SafeDirections == nil then
+            State.dir % No possible direction so just continues
+        elseif {List.member State.dir SafeDirections} then
+            State.dir % If possible, continues in the same direction
         else
-            % If no wall around, continues
-            State.dir
+            % Choose first safe direction
+            case SafeDirections of H|_ then H end
         end
     end
 
