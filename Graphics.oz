@@ -22,6 +22,7 @@ define
     FRUIT_SPRITE = {QTk.newImage photo(file: CD # '/assets/fruit.png')}
     ROTTEN_FRUIT_SPRITE = {QTk.newImage photo(file: CD # '/assets/rotten_fruit.png')}
     Dico = {Dictionary.new}
+    Occupied = {Dictionary.new}
     % GameObject: Base class for all game entities.
     % Attributes:
     %   - id: Unique identifier for the object
@@ -129,7 +130,7 @@ define
         % Input: GCPort (Game Controller port)
         % Sends movedTo message when target is reached
         meth move(GCPort)
-            PrevX PrevY NewTail Occ in
+            PrevX PrevY NewTail Occ Kek in
         PrevX = @x PrevY = @y
 
         if @moveDir == 'north' then 'y' := @y - 4
@@ -166,6 +167,9 @@ define
             {Send GCPort occupiedTiles(@id Occ)}
             {Send GCPort movedTo(@id @type NewX NewY)}
             {Dictionary.put Dico @id @snakescore}
+            Kek = {List.flatten NewX#NewY|Occ}
+            {Dictionary.put Occupied @id Kek}
+            {Send GCPort occupieds(Occupied)}
             {Send GCPort snakeScores(Dico)}
         end end
 
@@ -232,8 +236,10 @@ define
                     'text': "close"
                     'action' : proc {$} {Application.exit 0} end
                 )
-            )}
-
+            )} 
+            {@canvas bind(event:"<1>" 
+          
+          action:proc{$} {Browser.browse 'yes'} end)}
             'score' := 0
             'lastMsg' := 'Message box is empty'
             {@canvas create('image' GridWidth div 2 Height div 2 'image': @buffer)}
@@ -334,6 +340,7 @@ define
         % Input: Id (bot identifier)
         meth dispawnBot(Id)
             {Dictionary.remove Dico Id}
+            {Dictionary.remove Occupied Id}
             {Dictionary.remove @gameObjects Id}
         end
 
@@ -354,7 +361,6 @@ define
             {@scoreHandle set('text': "score: " # @score)}
         end
 meth updateSchet(Xyi)
-    
     {@canvas tk(delete scoreTag)}
    proc {PrintScore Lis I}
     Head in

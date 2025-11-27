@@ -21,7 +21,7 @@ define
         bot('snake' 'SnakeBotExample' Dim-2 1)
         bot('snake' 'SnakeBotExample' 1 Dim-2)
         bot('snake' 'SnakeBotExample' Dim-2 Dim-2)
-        bot('snake' 'AgentBlank' (Dim div 2) (Dim div 2))
+        bot('snake' 'AgenKey' (Dim div 2) (Dim div 2))
     ]
 
     % MapGenerator: Generates the game map as a list of integers.

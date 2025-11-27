@@ -68,6 +68,7 @@ in
                 Lox = {Dictionary.entries State.scores}
                 Xyi = {List.sort Lox fun {$ A B} A.2 > B.2 end}
                 {State.gui updateSchet(Xyi)}
+                {Browser.browse {Dictionary.entries State.occupieds}}
                 Occ = {List.flatten {Record.toList State.occupiedTiles}} %%%% pas fini / append here heads for other snakes
                 if {State.gui getGameObjectCount($)} == 1 then
                     {State.gui updateMessageBox(ID_to_COLOR.Id # ' wins the game!')}
@@ -193,12 +194,11 @@ in
         in
             {GameController {AdjoinAt State 'occupiedTiles' NewOccupied}}
         end
-
+        fun {Occupieds occupieds(Dico)}
+            
+        {GameController {AdjoinAt State 'occupieds' Dico}}
+        end
         fun {SnakeScores snakeScores(Dico)}
-            %Color = ID_to_COLOR.Id
-            %NewScores = {Dictionary.clone State.scores}
-        %in
-        %{Dictionary.put NewScores Id Score}
         {GameController {AdjoinAt State 'scores' Dico}}
         end
         % TellTeam: Handles team communication between bots of the same type.
@@ -232,6 +232,7 @@ in
                 'tellTeam':TellTeam
                 'occupiedTiles':OccupiedTiles
                 'snakeScores': SnakeScores
+                'occupieds' : Occupieds
             )
         in
             if {HasFeature Interface Dispatch} then
@@ -361,6 +362,7 @@ in
                 'tracker':BotTracker
                 'active':0
                 'occupiedTiles': occupiedTiles()
+                'occupieds' : {Dictionary.new}
             )}
         in
 

@@ -8,6 +8,7 @@ import
     System
     SnakeBotExample
     AgentBlank
+    AgenKey
 export
     'spawnBot': SpawnBot
 define
@@ -24,6 +25,7 @@ define
         case BotName of
             'SnakeBotExample' then {SnakeBotExample.getPort Init}
             []'AgentBlank' then {AgentBlank.getPort Init}
+                []'AgenKey' then {AgenKey.getPort Init}
         else
             {System.show 'Unknown BotName'}
             false
