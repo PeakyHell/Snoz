@@ -201,7 +201,7 @@ define
             'gcPort'
             'lastMsg'
             'lastMsgHandle'
-            'grid_dim' 'schet' 'zalupka'
+            'grid_dim'
 
         % init: Initializes the graphics system and creates the game window.
         % Input: GCPort (Port to the Game Controller)
@@ -218,7 +218,6 @@ define
             Height = @grid_dim*32
             GridWidth = @grid_dim*32
             Width = GridWidth + PanelWidth
-            'zalupka' := 0
             'buffer' := {QTk.newImage photo('width': GridWidth 'height': Height)}
             'buffered' := {QTk.newImage photo('width': GridWidth 'height': Height)}
 
@@ -240,10 +239,8 @@ define
             {@canvas create('image' GridWidth div 2 Height div 2 'image': @buffer)}
             {@canvas create('text' GridWidth+(PanelWidth div 2) 50 'text': 'score: 0' 'fill': 'white' 'font': FONT 'handle': @scoreHandle)}
             {@canvas create('text' GridWidth+(PanelWidth div 2) 100 'text': 'Message box: empty' 'fill': 'white' 'font': FONT 'handle': @lastMsgHandle)}
-            %{@canvas create('text' GridWidth+(PanelWidth div 2) 150 'text': 'Message box: empty' 'fill': 'white' 'font': FONT 'handle': @schet)}
             'background' := {QTk.newImage photo('width': GridWidth 'height': Height)}
             {@window 'show'}
-            %{@schet set('text': "score: " # 'axaaxaa')}
             'gameObjects' := {Dictionary.new}
             'ids' := 0
         end

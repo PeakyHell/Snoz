@@ -59,17 +59,14 @@ in
         % Output: Updated game controller instance
         % Validates movement, updates graphics, broadcasts position to all bots
         fun {MoveTo moveTo(Id Dir)}
-            Pos NewTracker NewBot NewPos Current Occ Xyesos Lox Xyi Rem
+            Pos NewTracker NewBot NewPos Current Occ Xyesos Lox Xyi
         in
             if State.tracker.Id.alive == true then
    
                 Pos = pos('x':State.tracker.Id.x  'y':State.tracker.Id.y)
                 Current = State.tracker.Id.x#State.tracker.Id.y
-                %{Browser.browse State.scores}
-                %Xyesos = {Record.toDictionary State.scores}
                 Lox = {Dictionary.entries State.scores}
                 Xyi = {List.sort Lox fun {$ A B} A.2 > B.2 end}
-                %{Browser.browse Xyi}
                 {State.gui updateSchet(Xyi)}
                 Occ = {List.flatten {Record.toList State.occupiedTiles}} %%%% pas fini / append here heads for other snakes
                 if {State.gui getGameObjectCount($)} == 1 then
