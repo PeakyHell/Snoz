@@ -62,7 +62,8 @@ define
                     TempState = {Adjoin State state('x':X 'y':Y)}
 
                     % Pick a random direction
-                    NewDir = Directions.({OS.rand} mod 4 + 1)
+                    % NewDir = Directions.({OS.rand} mod 4 + 1)
+                    NewDir = {ChooseDirection TempState}
 
                     Next = {NextMove TempState NewDir}
                     {Send State.gcport moveTo(State.id NewDir)}
@@ -122,5 +123,50 @@ define
     in
         thread {Handler Stream Instance} end
         Port
+    end
+
+    % Inputs
+    %   - State: The current state of the snake
+    fun {ChooseDirection State}
+        X Y SafeDirections L0 L1 L2 L3 
+        fun {AddIfCond Dir Cond Acc}
+            if Cond then Dir|Acc else Acc end
+        end
+    in
+        X = State.x
+        Y = State.y
+
+        % Find the safe surronding cells
+        L0 = nil
+
+        L1 = {AddIfCond 'north'
+            ({List.nth State.map {GetIndex X (Y-1)}} == 0)
+            L0}
+
+        L2 = {AddIfCond 'south'
+            ({List.nth State.map {GetIndex X (Y+1)}} == 0)
+            L1}
+
+        L3 = {AddIfCond 'east'
+            ({List.nth State.map {GetIndex (X+1) Y}} == 0)
+            L2}
+
+        SafeDirections = {AddIfCond 'west'
+            ({List.nth State.map {GetIndex (X-1) Y}} == 0)
+            L3}
+
+
+        if SafeDirections == nil then
+            State.dir % No possible direction so just continues
+        elseif {List.member State.dir SafeDirections} then
+            State.dir % If possible, continues in the same direction
+        else
+            % Choose first safe direction
+            case SafeDirections of H|_ then H end
+        end
+    end
+
+    fun {GetIndex X Y}
+        Y*Input.dim + X
     end
 end
