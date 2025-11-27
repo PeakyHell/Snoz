@@ -128,18 +128,32 @@ define
     % Inputs
     %   - State: The current state of the snake
     fun {ChooseDirection State}
-        if State.x == 1 then
-            Directions.(3) % Left wall
-        elseif State.x == Input.dim-2 then
-            Directions.(4) % Right wall
-            
-        elseif State.y == 1 then
-            Directions.(2) % Top wall
-        elseif State.y == Input.dim-2 then
-            Directions.(1) % Bottom wall
+        X Y NorthCell SouthCell EastCell WestCell
+    in
+        X = State.x
+        Y = State.y
 
+        NorthCell = {List.nth State.map ({GetIndex X Y-1} + 1)}
+        SouthCell = {List.nth State.map ({GetIndex X Y+1} + 1)}
+        EastCell = {List.nth State.map ({GetIndex X+1 Y} + 1)}
+        WestCell = {List.nth State.map ({GetIndex X-1 Y} + 1)}
+
+        % Go to the opposite of the first found wall
+        if NorthCell == 1 then
+            Directions.(2)
+        elseif SouthCell == 1 then
+            Directions.(1)
+        elseif EastCell == 1 then
+            Directions.(4)
+        elseif WestCell == 1 then
+            Directions.(3)
         else
-            Directions.({OS.rand} mod 4 + 1)
+            % If no wall around, continues
+            State.dir
         end
+    end
+
+    fun {GetIndex X Y}
+        Y*Input.dim + X
     end
 end
