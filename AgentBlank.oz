@@ -155,18 +155,37 @@ define
             ({List.nth State.map {GetIndex (X-1) Y}} == 0)
             L3}
 
+        {ChooseSafeDirection State SafeDirections}
+    end
+
+    fun {ChooseSafeDirection State SafeDirections}
+        X Y TargetX TargetY
+    in
+        X = State.x
+        Y = State.y
+        TargetX = Input.dim div 2
+        TargetY = Input.dim div 2
 
         if SafeDirections == nil then
             State.dir % No possible direction so just continues
         elseif {List.member State.dir SafeDirections} then
             State.dir % If possible, continues in the same direction
         else
-            % Choose first safe direction
-            case SafeDirections of H|_ then H end
+            if TargetX > X andthen {List.member 'east' SafeDirections} then
+                'east'
+            elseif TargetX < X andthen {List.member 'west' SafeDirections} then
+                'west'
+            elseif TargetY > Y andthen {List.member 'south' SafeDirections} then
+                'south'
+            elseif TargetY < Y andthen {List.member 'north' SafeDirections} then
+                'north'
+            else
+                case SafeDirections of H|_ then H else State.dir end
+            end
         end
     end
 
     fun {GetIndex X Y}
-        Y*Input.dim + X
+        Y*Input.dim + X + 1 % +1 because lists are 1 indexed
     end
 end
